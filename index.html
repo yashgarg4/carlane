@@ -401,10 +401,10 @@
             if (Math.abs(dx) < Math.abs(dy)) return;
 
             if (Math.abs(dx) > SWIPE_THRESHOLD) {
-              if (dx > 0 && this.playerLane < 2) {
-                this.targetLane++;
-              } else if (dx < 0 && this.playerLane > 0) {
-                this.targetLane--;
+              if (dx > 0) {
+                this.targetLane = Math.min(this.targetLane + 1, 2);
+              } else if (dx < 0) {
+                this.targetLane = Math.max(this.targetLane - 1, 0);
               }
 
               this.laneTransition = 0;
