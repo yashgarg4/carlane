@@ -4,18 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Lane Runner</title>
-    <meta
-      name="description"
-      content="Interactive playable game created with Ludo.ai - AI-powered game development platform"
-    />
-    <meta name="generator" content="Ludo.ai" />
-    <meta name="author" content="Ludo.ai" />
-    <meta
-      name="keywords"
-      content="playable game, interactive, AI-generated, Ludo.ai, threejs"
-    />
-    <meta name="created-date" content="2026-01-07" />
-    <meta name="game-engine" content="threejs" />
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>"
@@ -75,11 +63,11 @@
       }
       canvas {
         display: block;
-        margin: 0 auto;
-        max-width: 100vw;
-        max-height: 100vh;
-        width: auto;
-        height: auto;
+        /* margin: 0 auto; */
+        /* max-width: 100vw; */
+        /* max-height: 100vh; */
+        width: 100vw;
+        height: 100vh;
       }
       body > canvas {
         position: absolute;
@@ -151,9 +139,23 @@
             0.1,
             1000
           );
-          this.renderer = new THREE.WebGLRenderer({ antialias: true });
-          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          // this.renderer = new THREE.WebGLRenderer({ antialias: true });
+          // this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: "high-performance",
+          });
+
+          const dpr = Math.min(window.devicePixelRatio, 2);
+          this.renderer.setPixelRatio(dpr);
+          this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+
           this.renderer.setClearColor(0x0a0a0a);
+          this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+          // this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+          this.renderer.toneMappingExposure = 1.1;
+          this.renderer.physicallyCorrectLights = true;
+
           document.body.appendChild(this.renderer.domElement);
           this.gameState = "start";
           this.score = 0;
@@ -180,6 +182,17 @@
           this.speedBoosts = [];
           this.obstacleSpawnTimer = 0;
           this.boostSpawnTimer = 0;
+          // Audio
+          this.bgMusic = new Audio("sounds/bg2.mp3");
+          this.bgMusic.loop = true;
+          this.bgMusic.volume = 0.9;
+
+          this.collectSound = new Audio("sounds/star.mp3");
+          this.collectSound.volume = 0.6;
+
+          this.crashSound = new Audio("sounds/crash.mp3");
+          this.crashSound.volume = 0.5;
+
           this.init();
         }
         init() {
@@ -560,6 +573,9 @@
           this.speedIncrementsApplied = 0;
           this.playerLane = 1;
           this.targetLane = 1;
+          // ▶️ Start background music (user interaction safe)
+          this.bgMusic.currentTime = 0;
+          this.bgMusic.play().catch(() => {});
         }
         restart() {
           this.obstacles.forEach((obs) => this.scene.remove(obs));
@@ -744,6 +760,10 @@
               this.scene.remove(obstacle);
               this.obstacles.splice(i, 1);
               this.score = Math.max(0, this.score - 10);
+              // 🔊 crash sound
+              this.crashSound.currentTime = 0;
+              this.crashSound.play().catch(() => {});
+
               // visual feedback for hit
               this.createHitEffect(obstacle.position);
               this.hitFlashTimer = this.hitFlashDuration;
@@ -760,6 +780,9 @@
             ) {
               // this.speedBoostTimer = 3;
               this.score += 20;
+              // 🔊 collect sound
+              this.collectSound.currentTime = 0;
+              this.collectSound.play().catch(() => {});
               this.createCollectEffect(boost.position);
               this.scene.remove(boost);
               this.speedBoosts.splice(i, 1);
@@ -770,10 +793,17 @@
           // Game over disabled for endless mode — noop
         }
         onWindowResize() {
-          this.camera.aspect = window.innerWidth / window.innerHeight;
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+
+          this.camera.aspect = width / height;
           this.camera.updateProjectionMatrix();
-          this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+          const dpr = Math.min(window.devicePixelRatio, 2);
+          this.renderer.setPixelRatio(dpr);
+          this.renderer.setSize(width, height, false);
         }
+
         animate(currentTime = 0) {
           requestAnimationFrame((time) => this.animate(time));
           const deltaTime = Math.min((currentTime - this.lastTime) / 1000, 0.1);
@@ -863,6 +893,14 @@
           animate();
         }
       }
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          game.bgMusic.pause();
+        } else if (game.gameState === "playing") {
+          game.bgMusic.play().catch(() => {});
+        }
+      });
+
       const game = new Game();
     </script>
   </body>
