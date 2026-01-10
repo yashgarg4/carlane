@@ -366,10 +366,11 @@
           this.cameraBasePosition = this.camera.position.clone();
         }
         setupInput() {
-          let touchStartX = null;
-          let touchStartY = null;
+          let touchStartX = 0;
+          let touchStartY = 0;
+          let swipeHandled = false;
           let touchMoved = false;
-          const SWIPE_THRESHOLD = 40;
+          const SWIPE_THRESHOLD = 35;
           const handleKeyDown = (e) => {
             if (this.gameState !== "playing") return;
             if (e.key === "ArrowLeft" && this.playerLane > 0) {
@@ -380,55 +381,41 @@
               this.laneTransition = 0;
             }
           };
+
           const handleTouchStart = (e) => {
-            if (!e.touches || e.touches.length === 0) return;
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            touchMoved = false;
+            if (this.gameState !== "playing") return;
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            swipeHandled = false;
           };
+
           const handleTouchMove = (e) => {
-            if (!touchStartX || !e.touches || e.touches.length === 0) return;
-            const dx = e.touches[0].clientX - touchStartX;
-            const dy = e.touches[0].clientY - touchStartY;
-            // horizontal swipe only
-            if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
-              if (this.gameState === "playing") {
-                if (dx < 0 && this.playerLane > 0) {
-                  this.targetLane--;
-                  this.laneTransition = 0;
-                } else if (dx > 0 && this.playerLane < 2) {
-                  this.targetLane++;
-                  this.laneTransition = 0;
-                }
+            if (swipeHandled || this.gameState !== "playing") return;
+
+            const touch = e.touches[0];
+            const dx = touch.clientX - touchStartX;
+            const dy = touch.clientY - touchStartY;
+
+            // Ignore vertical swipes
+            if (Math.abs(dx) < Math.abs(dy)) return;
+
+            if (Math.abs(dx) > SWIPE_THRESHOLD) {
+              if (dx > 0 && this.playerLane < 2) {
+                this.targetLane++;
+              } else if (dx < 0 && this.playerLane > 0) {
+                this.targetLane--;
               }
-              touchMoved = true;
-              touchStartX = null;
-              touchStartY = null;
+
+              this.laneTransition = 0;
+              swipeHandled = true; // 🔒 lock swipe
             }
           };
-          const handleTouchEnd = (e) => {
-            if (this.gameState !== "playing" || touchStartX === null) {
-              touchStartX = null;
-              touchStartY = null;
-              return;
-            }
-            if (touchMoved) {
-              touchStartX = null;
-              touchStartY = null;
-              return;
-            }
-            const touchEndX = e.changedTouches[0].clientX;
-            const diff = touchEndX - touchStartX;
-            if (diff < -SWIPE_THRESHOLD && this.playerLane > 0) {
-              this.targetLane--;
-              this.laneTransition = 0;
-            } else if (diff > SWIPE_THRESHOLD && this.playerLane < 2) {
-              this.targetLane++;
-              this.laneTransition = 0;
-            }
-            touchStartX = null;
-            touchStartY = null;
+
+          const handleTouchEnd = () => {
+            swipeHandled = false;
           };
+
           // Pointer events fallback for some devices
           let pointerStartX = null;
           const handlePointerDown = (e) => {
@@ -471,9 +458,7 @@
           window.addEventListener("touchmove", handleTouchMove, {
             passive: true,
           });
-          window.addEventListener("touchend", handleTouchEnd, {
-            passive: true,
-          });
+          window.addEventListener("touchend", handleTouchEnd);
           window.addEventListener("pointerdown", handlePointerDown);
           window.addEventListener("pointerup", handlePointerUp);
           window.addEventListener("mousedown", handleMouseDown);
