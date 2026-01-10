@@ -9,7 +9,13 @@
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>"
     />
     <style>
+      html,
       body {
+        width: 100%;
+        height: calc(var(--vh, 1vh) * 100);
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
         margin: 0;
         padding: 0;
         background: #000;
@@ -66,32 +72,8 @@
         /* margin: 0 auto; */
         /* max-width: 100vw; */
         /* max-height: 100vh; */
-        width: 100vw;
-        height: 100vh;
-      }
-      body > canvas {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 1;
-      }
-      .ludo-footer {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        padding: 8px 12px;
-        background: rgba(0, 0, 0, 0.7);
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 11px;
-        text-decoration: none;
-        border-top-left-radius: 4px;
-        transition: all 0.2s ease;
-        z-index: 1000;
-      }
-      .ludo-footer:hover {
-        background: rgba(0, 0, 0, 0.9);
-        color: rgba(255, 255, 255, 0.9);
+        width: 100%;
+        height: 100%;
       }
     </style>
   </head>
@@ -108,6 +90,14 @@
     <script type="module">
       // Monitor for canvas elements and move them to gameContainer
       const gameContainer = document.getElementById("gameContainer");
+
+      function fixMobileViewport() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+      }
+
+      fixMobileViewport();
+      window.addEventListener("resize", fixMobileViewport);
 
       // Function to move canvas elements to gameContainer
       function moveCanvasToContainer() {
