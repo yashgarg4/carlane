@@ -171,7 +171,7 @@
           // Audio
           this.bgMusic = new Audio("sounds/bg4.mp3");
           this.bgMusic.loop = true;
-          this.bgMusic.volume = 0.7;
+          this.bgMusic.volume = 0.9;
 
           this.collectSound = new Audio("sounds/star.mp3");
           this.collectSound.volume = 0.6;
@@ -483,7 +483,7 @@
           this.scoreElement.style.color = "#00ffff";
           this.scoreElement.style.fontSize = "24px";
           this.scoreElement.style.fontFamily = "monospace";
-          this.scoreElement.textContent = "SCORE: 0";
+          // this.scoreElement.textContent = "SCORE: 0";
           document.body.appendChild(this.scoreElement);
           // speedElement removed — on-screen speed not displayed
           this.startScreen = document.createElement("div");
@@ -547,7 +547,8 @@
           this.gameOverScreen.appendChild(this.restartButton);
           document.body.appendChild(this.gameOverScreen);
         }
-        startGame() {
+
+        playGame() {
           this.gameState = "playing";
           this.startScreen.style.display = "none";
           this.score = 0;
@@ -562,6 +563,10 @@
           // ▶️ Start background music (user interaction safe)
           this.bgMusic.currentTime = 0;
           this.bgMusic.play().catch(() => {});
+        }
+
+        startGame() {
+          window.parent.postMessage({ type: "readyGame" }, "*");
         }
         restart() {
           this.obstacles.forEach((obs) => this.scene.remove(obs));
@@ -666,7 +671,7 @@
           this.updateObstacles(deltaTime);
           this.updateSpeedBoosts(deltaTime);
           this.checkCollisions();
-          this.scoreElement.textContent = `SCORE: ${this.score}`;
+          // this.scoreElement.textContent = `SCORE: ${this.score}`;
           // on-screen speed display removed
         }
         spawnObstacle() {
@@ -746,6 +751,10 @@
               this.scene.remove(obstacle);
               this.obstacles.splice(i, 1);
               this.score = Math.max(0, this.score - 10);
+              window.parent.postMessage(
+                { type: "updateBattleScore", score: this.score },
+                "*"
+              );
               // 🔊 crash sound
               this.crashSound.currentTime = 0;
               this.crashSound.play().catch(() => {});
@@ -766,6 +775,10 @@
             ) {
               // this.speedBoostTimer = 3;
               this.score += 20;
+              window.parent.postMessage(
+                { type: "updateBattleScore", score: this.score },
+                "*"
+              );
               // 🔊 collect sound
               this.collectSound.currentTime = 0;
               this.collectSound.play().catch(() => {});
@@ -881,6 +894,18 @@
       });
 
       const game = new Game();
+      window.addEventListener("message", function (event) {
+        if (!event.data || event.data.type !== "parent-event") return;
+
+        const command = event.data.payload?.command;
+
+        if (command === "startGame") {
+          game.playGame();
+        } else if (command === "endGame") {
+          // Reserved for future use (pause / stop / send score etc.)
+          // game.bgMusic.pause();
+        }
+      });
     </script>
   </body>
 </html>
